@@ -1,0 +1,36 @@
+{
+  "name": "semantic-language",
+  "displayName": "Semantic Language",
+  "description": "Syntax highlighting for .sem and .semantic files",
+  "version": "1.0.0",
+  "publisher": "semantic",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "semantic",
+        "aliases": [
+          "Semantic",
+          "semantic"
+        ],
+        "extensions": [
+          ".sem",
+          ".semantic"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "semantic",
+        "scopeName": "source.semantic",
+        "path": "./syntaxes/semantic.tmLanguage.json"
+      }
+    ]
+  }
+}

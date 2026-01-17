@@ -1,0 +1,241 @@
+# ============================================
+# Example Semantic Language File
+# Demonstrates all syntax highlighting features
+# ============================================
+
+@meta
+    name: "User Management System"
+    version: "1.0.0"
+    author: "Semantic Developer"
+    description: "A sample semantic program for managing users"
+@end
+
+@imports
+    from "stdlib/collections" use List, Maps
+    from "stdlib/validation" use Validator
+    from "./helpers.sem" use formatDate, parseInput
+@end
+
+@definitions
+    # Global type definitions
+    type UserId := String
+    type Email := String
+    type Timestamp := Number
+    
+    # Global constants
+    MAX_USERS := 1000
+    DEFAULT_ROLE := "member"
+@end
+
+@constant API_VERSION
+    value: "2.0"
+    description: "Current API version for external integrations"
+@end
+
+# ============================================
+# Data Structures
+# ============================================
+
+@structure User
+    purpose:: Represents a user in the system with all relevant data
+    
+    properties::
+        id: UserId           # Unique identifier
+        name: String         # Full display name
+        email: Email         # Contact email address
+        role: String         # User's role (admin, member, guest)
+        created_at: Timestamp
+        is_active: Boolean
+    
+    constraints::
+        - email must be valid email format
+        - name length between 2 and 100 characters
+        - role in ["admin", "member", "guest"]
+    
+    behaviors::
+        full_name -> returns formatted display name
+        is_admin -> returns true if role is "admin"
+        age_in_days -> calculates days since created_at
+@end
+
+@structure UserList
+    purpose:: A collection of users with utility methods
+    
+    properties::
+        users: List<User>
+        count: Integer
+    
+    behaviors::
+        add_user -> appends user to list
+        find_by_id -> searches for user by ID
+        filter_active -> returns only active users
+@end
+
+# ============================================
+# Error Definitions
+# ============================================
+
+@error UserNotFound
+    code: 404
+    message: "The requested user could not be found"
+    recoverable: true
+@end
+
+@error ValidationFailed
+    code: 400
+    message: "User data validation failed"
+    details: List<String>
+@end
+
+# ============================================
+# Functions
+# ============================================
+
+@function create_user
+    purpose:: Creates a new user with validation and persistence
+    
+    accepts::
+        name: String        # User's display name
+        email: Email        # User's email address
+        role: String = "member"  # Optional role, defaults to member
+    
+    returns:: Result<User, Error>
+    
+    steps::
+        1. Validate input parameters
+        2. Check if email already exists in system
+        3. Generate unique user ID
+        4. Create user record with current timestamp
+        5. Persist user to database
+        6. Return created user or error
+    
+    edge_cases::
+        when email is empty : return ValidationFailed
+        when email exists : return UserAlreadyExists
+        when database unavailable : retry 3 times, then fail
+@end
+
+@function find_user_by_email
+    purpose:: Searches for a user by their email address
+    
+    accepts::
+        email: Email
+        include_inactive: Boolean = false
+    
+    returns:: Optional<User>
+    
+    steps::
+        1. Normalize email to lowercase
+        2. Query user database
+        3. Filter by active status if required
+        4. Return user or None
+    
+    edge_cases::
+        when email is invalid : return None
+        when multiple matches : return first match
+@end
+
+@function delete_user
+    purpose:: Soft-deletes a user by marking them inactive
+    
+    accepts::
+        user_id: UserId
+        reason: String = "No reason provided"
+    
+    returns:: Result<Boolean, Error>
+    
+    steps::
+        1. Find user by ID
+        2. Mark user as inactive
+        3. Log deletion reason
+        4. Notify relevant systems
+        5. Return success status
+@end
+
+# ============================================
+# Flow Control Examples
+# ============================================
+
+@flow user_registration
+    purpose:: Handles the complete user registration workflow
+    
+    steps::
+        1. Receive registration request
+        2. Validate input data
+        
+        @safely
+            3. Check for existing user
+            4. Create new user account
+            5. Send welcome email
+        @error
+            log_error and notify_admin
+            return registration_failed
+        @end
+        
+        6. Return success with user data
+@end
+
+@flow permission_check
+    purpose:: Determines if a user has permission for an action
+    
+    accepts::
+        user: User
+        action: String
+        resource: String
+    
+    steps::
+        when user.role is "admin" : allow all actions
+        when user.role is "member" : check member permissions
+        when user.role is "guest" : allow read-only actions
+        else : deny access
+@end
+
+# ============================================
+# Loop Examples
+# ============================================
+
+@repeat process_users
+    purpose:: Iterates through all users for batch processing
+    
+    for each user in active_users
+        1. Validate user data
+        2. Update last_seen timestamp
+        3. Check subscription status
+        
+        when user.subscription_expired:
+            notify_user about renewal
+            mark_for_followup
+@end
+
+@repeat pagination_example
+    purpose:: Demonstrates range-based iteration
+    
+    for page from 1 to total_pages by 1
+        1. Fetch page of results
+        2. Process each item
+        3. Update progress indicator
+@end
+
+# ============================================
+# Main Program
+# ============================================
+
+@program
+    purpose:: Entry point for the user management system
+    
+    steps::
+        1. Initialize configuration
+        2. Connect to database
+        3. Load existing users
+        
+        @safely
+            4. Start API server on port 8080
+            5. Begin accepting requests
+        @error
+            log "Failed to start server"
+            exit with code 1
+        @end
+        
+        6. Run until shutdown signal
+        7. Cleanup and exit gracefully
+@end
